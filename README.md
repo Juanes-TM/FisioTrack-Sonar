@@ -1,20 +1,30 @@
-**Proyecto E14**
+# 🏥 Proyecto E14 — Gestión Integral de un Centro de Fisioterapia
 
-El proyecto consiste en el desarrollo de una aplicación web full-stack para la gestión
-integral de un centro de fisioterapia.
+Este proyecto consiste en el desarrollo de una **aplicación web full-stack** para la gestión completa de un centro de fisioterapia. El objetivo es ofrecer una plataforma moderna, accesible y eficiente que facilite la administración de pacientes, citas, tratamientos y comunicación interna.
 
-El frontend ofrecerá una experiencia de usuario fluida y accesible, mientras que el backend
-gestionará la lógica de negocio, la comunicación con la base de datos y las notificaciones
-automáticas, tal y como hemos visto durante las clases de teoría.
+---
 
-Para este proyecto, hemos decidido utilizar una arquitectura MEAN, que es la arquitectura
-con la que hemos estado trabajando previamente.
-Básicamente utilizaremos:
-● MongoDB para la base de datos
-● Para los servidores backend:
-1. Express
-2. Angular/React
-3. Node
-● Nginx para el balanceador de carga (proxy)
-Seguiremos la misma estructura que seguimos durante las prácticas de la asignatura, un
-balanceador de carga, varios servidores backend, y un servidor de base de datos.
+## 🎯 Objetivo del Proyecto
+
+Crear un sistema web que permita:
+
+- Una **experiencia de usuario fluida** en el frontend.  
+- Una **gestión sólida de la lógica de negocio** en el backend.  
+- **Comunicación con la base de datos**, envío de notificaciones y automatizaciones varias.  
+- Una arquitectura escalable y mantenible, siguiendo lo aprendido durante las clases.
+
+---
+
+## 🏗️ Arquitectura MEAN
+
+Se empleará una arquitectura **MEAN**, que es la utilizada durante las prácticas de la asignatura.
+
+### 🔹 Tecnologías principales:
+
+- **MongoDB** – Base de datos NoSQL para el almacenamiento de información.
+- **Express** – Framework para el servidor backend.
+- **Angular/React** – Framework o librería JavaScript para el frontend.
+- **Node.js** – Entorno de ejecución del backend.
+- **Nginx** – Balanceador de carga (reverse proxy).
+
+---
