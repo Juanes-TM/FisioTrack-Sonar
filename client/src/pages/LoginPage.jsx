@@ -60,6 +60,13 @@ function LoginPage() {
             Iniciar sesión
           </button>
         </form>
+
+        <p className="text-gray-500 text-sm mt-4">
+          ¿No tienes cuenta?
+          <Link to="/register" className="text-teal-600 hover:underline ml-1">
+            Regístrate aquí
+          </Link>
+        </p>
       </div>
     </div>
   );

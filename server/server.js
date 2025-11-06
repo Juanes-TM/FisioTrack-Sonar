@@ -34,7 +34,8 @@ const CLIENT_DIST_PATH = path.join(__dirname, '../client/dist');
 app.use(express.static(CLIENT_DIST_PATH));
 
 // --- EXPRESS 5 ---
-app.get(/.*/, (req, res) => {
+app.get(/^(?!\/api).*/, (req, res) => {
+  //if (req.path.startsWith('/api')) return next(); // no interceptar la api
   res.sendFile(path.join(CLIENT_DIST_PATH, 'index.html'));
 });
 
