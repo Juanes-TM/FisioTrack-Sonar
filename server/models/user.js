@@ -7,7 +7,10 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   telephone: {type: String, required: true},
   rol: { type: String, enum: ['cliente', 'fisioterapeuta', 'admin'], default: 'cliente' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  // Campos para recuperación de contraseña
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date }
 });
 
 module.exports = mongoose.model('User', UserSchema);
