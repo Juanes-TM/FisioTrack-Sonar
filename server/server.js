@@ -27,7 +27,9 @@ mongoose.connect(MONGO_URI)
 
 // ==================== RUTAS API ====================
 const authRoutes = require('./routes/auth');
+const adminRoutes = require("./routes/admin");
 app.use('/api', authRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ==================== FRONTEND (React compilado) ====================
 const CLIENT_DIST_PATH = path.join(__dirname, '../client/dist');
