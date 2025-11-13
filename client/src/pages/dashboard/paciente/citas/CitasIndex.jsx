@@ -3,15 +3,17 @@ import CitasPage from "./CitasPage";
 import CitasCalendar from "./CitasCalendar";
 
 function CitasIndex() {
-  const { user } = useSelector((state) => state.user);
+  const reduxUser = useSelector((state) => state.user.user);
 
-  if (!user) return <p className="p-6">No autorizado</p>;
+  if (!reduxUser) return <p className="p-6">No autorizado</p>;
 
-  if (user.rol === "cliente") {
+  const currentUser = reduxUser.user;  // <-- ACCESO REAL
+
+  if (currentUser.rol === "cliente") {
     return <CitasCalendar modo="paciente" />;
   }
 
-  if (user.rol === "fisioterapeuta") {
+  if (currentUser.rol === "fisioterapeuta") {
     return <CitasCalendar modo="fisio" />;
   }
 

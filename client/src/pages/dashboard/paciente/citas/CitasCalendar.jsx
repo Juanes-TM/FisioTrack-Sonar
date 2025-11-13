@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../../../services/api";
 import { useFisioterapeutas } from "../../../../hooks/useFisioterapeutas";
+import EditarCitaModal from "./EditarCitaModal";
 import CrearCitaModal from "./CrearCitaModal";
 
+// ----------------------
+// Helpers
+// ----------------------
 function startOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0-6 (domingo-sábado)
-  const diff = (day === 0 ? -6 : 1) - day; // llevar a lunes
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function formatDateISO(d) {
-  return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  return d.toISOString().split("T")[0];
 }
 
 function formatHour(hourInt) {
@@ -21,26 +25,29 @@ function formatHour(hourInt) {
 }
 
 export default function CitasCalendar({ modo }) {
+  // Semana actual
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+
+  // DATA
   const [citas, setCitas] = useState([]);
   const [loadingCitas, setLoadingCitas] = useState(true);
 
   const { fisios, loading: loadingFisios } = useFisioterapeutas();
-  const [selectedFisioId, setSelectedFisioId] = useState("");
+  const [selectedFisioId, setSelectedFisioId] = useState("mis-citas");
   const [selectedFisioNombre, setSelectedFisioNombre] = useState("");
 
-  const [modalVisible, setModalVisible] = useState(false);
+  // Modales
+  const [modalEditar, setModalEditar] = useState(null);
+  const [modalCrear, setModalCrear] = useState(false);
   const [slotSeleccionado, setSlotSeleccionado] = useState(null);
+
+  // UI
   const [mensajeError, setMensajeError] = useState("");
 
-  const hours = useMemo(() => {
-    const list = [];
-    for (let h = 8; h < 20; h++) {
-      list.push(h); // 8:00 a 19:00 (última cita 19-20)
-    }
-    return list;
-  }, []);
+  // Horas 8 - 19
+  const hours = useMemo(() => [...Array(12)].map((_, i) => 8 + i), []);
 
+  // Días semana
   const days = useMemo(() => {
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(weekStart);
@@ -49,133 +56,151 @@ export default function CitasCalendar({ modo }) {
     });
   }, [weekStart]);
 
-  const fetchCitas = async () => {
+  // ----------------------
+  // Fetch citas (solo paciente)
+  // ----------------------
+  const fetchCitasPaciente = async () => {
     try {
       setLoadingCitas(true);
       const res = await api.get("/api/citas");
       setCitas(res.data);
     } catch (err) {
-      console.error("Error al cargar citas:", err);
+      console.error("Error cargando citas:", err);
     } finally {
       setLoadingCitas(false);
     }
   };
 
   useEffect(() => {
-    fetchCitas();
+    fetchCitasPaciente();
   }, []);
 
-  const avanzarSemana = (delta) => {
-    const nueva = new Date(weekStart);
-    nueva.setDate(weekStart.getDate() + delta * 7);
-    setWeekStart(startOfWeek(nueva));
-  };
+  // ----------------------
+  // Filtrado
+  // ----------------------
+  const citasVisibles = useMemo(() => {
+    if (selectedFisioId === "mis-citas") return citas;
+    return citas.filter((c) => c.fisioterapeuta._id === selectedFisioId);
+  }, [citas, selectedFisioId]);
 
   const citasEnCelda = (dayDate, hourInt) => {
     const startStr = formatDateISO(dayDate);
-    return citas.filter((c) => {
+    return citasVisibles.filter((c) => {
       const start = new Date(c.startAt);
-      const sameDay = formatDateISO(start) === startStr;
-      const sameHour = start.getHours() === hourInt;
-      return sameDay && sameHour;
+      return (
+        formatDateISO(start) === startStr && start.getHours() === hourInt
+      );
     });
   };
 
+  // ----------------------
+  // Crear cita
+  // ----------------------
   const handleClickCelda = (dayDate, hourInt) => {
     setMensajeError("");
 
     if (modo !== "paciente") return;
 
-    if (!selectedFisioId) {
-      setMensajeError("Selecciona primero un fisioterapeuta.");
+    const enCelda = citasEnCelda(dayDate, hourInt);
+    if (enCelda.length > 0) {
+      setMensajeError("Ya existe una cita en este horario.");
       return;
     }
 
-    const fecha = formatDateISO(dayDate);
-    const hora = formatHour(hourInt);
-
-    const citasSlot = citasEnCelda(dayDate, hourInt);
-    if (citasSlot.length > 0) {
-      // Ojo: aquí solo vemos tus citas, el backend igualmente impedirá solapamientos con otros pacientes
-      setMensajeError("Ya tienes una cita en este horario.");
+    if (!selectedFisioId || selectedFisioId === "mis-citas") {
+      setMensajeError("Selecciona un fisioterapeuta antes de reservar.");
       return;
     }
 
-    setSlotSeleccionado({ fecha, hora });
-    setModalVisible(true);
+    const f = fisios.find((x) => x._id === selectedFisioId);
+
+    setSlotSeleccionado({
+      fecha: formatDateISO(dayDate),
+      hora: formatHour(hourInt),
+      fisioterapeutaId: selectedFisioId,
+      fisioterapeutaNombre: f ? `${f.nombre} ${f.apellido}` : "",
+    });
+
+    setModalCrear(true);
   };
 
-  const handleCitaCreada = (nuevaCita) => {
-    setCitas((prev) => [...prev, nuevaCita]);
+  const onCitaCreada = (nueva) => {
+    if (nueva.cita) setCitas((prev) => [...prev, nueva.cita]);
   };
 
-  const handleChangeFisio = (e) => {
-    const id = e.target.value;
-    setSelectedFisioId(id);
-    const f = fisios.find((f) => f._id === id);
-    setSelectedFisioNombre(f ? `${f.nombre} ${f.apellido}` : "");
+  const onCitaCancelada = (id) => {
+    setCitas((prev) => prev.filter((c) => c._id !== id));
   };
 
+  // ----------------------
+  // Estilos Compactos Modernos
+  // ----------------------
+  const styles = {
+    grid: "grid text-xs",
+
+    dayHeader:
+      "px-3 py-3 text-center font-semibold text-gray-800 border-b border-gray-200 " +
+      "bg-gradient-to-b from-white to-gray-100 shadow-sm rounded-t-md",
+
+    dayToday:
+      "bg-teal-50 text-teal-700 font-bold shadow-inner border-b border-teal-200",
+
+    hourCell:
+      "px-2 py-1 text-right border-r border-gray-100 text-[11px] font-medium text-gray-500",
+
+    hourBadge:
+      "inline-block bg-gray-200 text-gray-700 px-2 py-0.5 rounded-md text-[10px] font-semibold",
+
+    cellBase:
+      "border border-gray-100 h-14 relative cursor-pointer transition",
+
+    cellHover:
+      "hover:bg-gray-100/60",
+
+    cellAltBackground:
+      "bg-gray-50/40",
+
+    evento:
+      "absolute inset-1 rounded-md p-1 text-[11px] text-white shadow-md overflow-hidden group",
+
+    tooltip:
+      "absolute z-50 hidden group-hover:block bg-black/80 text-white text-[10px] rounded px-2 py-1 " +
+      "shadow-xl -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap"
+  };
+
+  // ----------------------
+  // Render
+  // ----------------------
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-semibold text-teal-700">
-            {modo === "paciente"
-              ? "Reservar una cita"
-              : "Calendario de citas"}
-          </h2>
-          <p className="text-gray-600 text-sm">
-            Semana del {days.length > 0 && formatDateISO(days[0])} al{" "}
-            {days.length > 0 && formatDateISO(days[6])}
-          </p>
-        </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => avanzarSemana(-1)}
-            className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
-          >
-            Semana anterior
-          </button>
-          <button
-            onClick={() => setWeekStart(startOfWeek(new Date()))}
-            className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
-          >
-            Hoy
-          </button>
-          <button
-            onClick={() => avanzarSemana(1)}
-            className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
-          >
-            Semana siguiente
-          </button>
-        </div>
+      {/* Título */}
+      <h2 className="text-2xl font-semibold text-teal-700 mb-2">Mis Citas</h2>
+      <p className="text-gray-600 text-sm mb-6">
+        Semana del {formatDateISO(days[0])} al {formatDateISO(days[6])}
+      </p>
+
+      {/* Selector */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Mostrar citas de:
+        </label>
+
+        <select
+          value={selectedFisioId}
+          onChange={(e) => setSelectedFisioId(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
+        >
+          <option value="mis-citas">Mis citas</option>
+
+          {!loadingFisios &&
+            fisios.map((f) => (
+              <option key={f._id} value={f._id}>
+                {f.nombre} {f.apellido}
+              </option>
+            ))}
+        </select>
       </div>
-
-      {modo === "paciente" && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Fisioterapeuta
-          </label>
-          {loadingFisios ? (
-            <p className="text-sm text-gray-500">Cargando fisioterapeutas...</p>
-          ) : (
-            <select
-              value={selectedFisioId}
-              onChange={handleChangeFisio}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-            >
-              <option value="">Selecciona un fisioterapeuta</option>
-              {fisios.map((f) => (
-                <option key={f._id} value={f._id}>
-                  {f.nombre} {f.apellido}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
 
       {mensajeError && (
         <div className="mb-4 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm">
@@ -183,59 +208,81 @@ export default function CitasCalendar({ modo }) {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+      {/* CALENDARIO */}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="grid" style={{ gridTemplateColumns: "80px repeat(7, 1fr)" }}>
-          <div className="bg-gray-100 border-b border-gray-200" />
-          {days.map((d, idx) => (
-            <div
-              key={idx}
-              className="bg-gray-100 border-b border-gray-200 px-2 py-2 text-center text-xs font-semibold text-gray-700"
-            >
-              {d.toLocaleDateString("es-ES", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-              })}
-            </div>
-          ))}
 
+          {/* Header vacío izquierda */}
+          <div />
+
+          {/* Headers de días */}
+          {days.map((d, idx) => {
+            const isToday = d.toDateString() === new Date().toDateString();
+            return (
+              <div
+                key={idx}
+                className={`${styles.dayHeader} ${isToday ? styles.dayToday : ""}`}
+              >
+                {d.toLocaleDateString("es-ES", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                })}
+              </div>
+            );
+          })}
+
+          {/* Horas + Celdas */}
           {hours.map((h) => (
             <div key={h} className="contents">
-              <div className="border-t border-gray-200 text-xs text-gray-500 px-2 py-1 text-right">
-                {formatHour(h)}
+
+              {/* Hora */}
+              <div className={styles.hourCell}>
+                <span className={styles.hourBadge}>{formatHour(h)}</span>
               </div>
+
+              {/* Celdas */}
               {days.map((d, idx) => {
-                const citasCelda = citasEnCelda(d, h);
-                const ocupado = citasCelda.length > 0;
+                const celdaCitas = citasEnCelda(d, h);
                 return (
                   <div
                     key={idx}
-                    className={`border-t border-l border-gray-200 h-16 relative cursor-pointer ${
-                      ocupado ? "bg-teal-50" : "hover:bg-gray-50"
-                    }`}
+                    className={`
+                      ${styles.cellBase}
+                      ${styles.cellHover}
+                      ${h % 2 === 0 ? styles.cellAltBackground : ""}
+                    `}
                     onClick={() => handleClickCelda(d, h)}
                   >
-                    {loadingCitas && (
-                      <span className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400">
-                        Cargando...
-                      </span>
-                    )}
-
                     {!loadingCitas &&
-                      citasCelda.map((c) => (
+                      celdaCitas.map((c) => (
                         <div
                           key={c._id}
-                          className={`absolute inset-1 rounded-lg text-[10px] px-2 py-1 overflow-hidden ${
-                            c.estado === "cancelada"
-                              ? "bg-gray-300 text-gray-700 line-through"
-                              : c.estado === "confirmada"
-                              ? "bg-teal-600 text-white"
-                              : c.estado === "completada"
-                              ? "bg-emerald-500 text-white"
-                              : "bg-amber-400 text-white"
-                          }`}
+                          className={`
+                            ${styles.evento}
+                            ${
+                              c.estado === "cancelada"
+                                ? "bg-gray-400"
+                                : c.estado === "confirmada"
+                                ? "bg-teal-600"
+                                : c.estado === "completada"
+                                ? "bg-emerald-500"
+                                : "bg-amber-500"
+                            }
+                          `}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalEditar(c);
+                          }}
                         >
                           {c.motivo}
+
+                          <div className={styles.tooltip}>
+                            <div className="font-semibold">
+                              {c.paciente.nombre} {c.paciente.apellido}
+                            </div>
+                            <div className="opacity-80">{c.motivo}</div>
+                          </div>
                         </div>
                       ))}
                   </div>
@@ -246,15 +293,22 @@ export default function CitasCalendar({ modo }) {
         </div>
       </div>
 
-      {modo === "paciente" && slotSeleccionado && (
+      {/* MODALES */}
+      {modalEditar && (
+        <EditarCitaModal
+          visible={true}
+          cita={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onCancelada={onCitaCancelada}
+        />
+      )}
+
+      {modalCrear && (
         <CrearCitaModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          fisioterapeutaId={selectedFisioId}
-          fisioterapeutaNombre={selectedFisioNombre}
-          fecha={slotSeleccionado.fecha}
-          hora={slotSeleccionado.hora}
-          onCreated={handleCitaCreada}
+          visible={true}
+          onClose={() => setModalCrear(false)}
+          slot={slotSeleccionado}
+          onCreated={onCitaCreada}
         />
       )}
     </div>
