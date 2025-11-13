@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PrivateRoute from "./routes/PrivateRoute";
 import ProfilePage from "./pages/ProfilePage";
 
 
@@ -25,14 +26,14 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/profile" element={<ProfilePage />} />
-      
-      {/* Dashboard protegido */}
+
+      {/* Dashboard protegido general */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <DashboardLayout />
-          </ProtectedRoute>
+          </PrivateRoute>
         }
       >
         {/* --- PACIENTE --- */}
@@ -47,6 +48,16 @@ function App() {
         <Route path="admin" element={<AdminDashboard />} />
         <Route path="admin/usuarios" element={<UsuariosPage />} />
       </Route>
+
+      {/*  Ruta protegida exclusiva para admins */}
+      <Route
+        path="/dashboard/admin"
+        element={
+          <PrivateRoute allowedRoles={["admin"]}>
+            <AdminDashboard />
+          </PrivateRoute>
+        }
+      />
     </Routes>
   );
 }

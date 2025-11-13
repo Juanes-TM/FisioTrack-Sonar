@@ -28,8 +28,16 @@ mongoose.connect(MONGO_URI)
 // ==================== RUTAS API ====================
 const authRoutes = require('./routes/auth');
 const adminRoutes = require("./routes/admin");
-app.use('/api', authRoutes);
-app.use("/api/admin", adminRoutes);
+const citasRoutes = require('./routes/citas');
+
+// --- CAMBIO IMPORTANTE AQUÍ ---
+// Definimos primero las rutas específicas
+app.use('/api/citas', citasRoutes); // Captura /api/citas
+app.use("/api/admin", adminRoutes); // Captura /api/admin
+
+// Definimos al final la ruta genérica /api (auth)
+app.use('/api', authRoutes);        // Captura el resto de /api (login, register)
+
 
 // ==================== FRONTEND (React compilado) ====================
 const CLIENT_DIST_PATH = path.join(__dirname, '../client/dist');

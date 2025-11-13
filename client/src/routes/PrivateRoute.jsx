@@ -3,17 +3,24 @@ import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 /**
- * Ruta protegida que redirige al login si el usuario no está autenticado.
+ * Ruta protegida con control de autenticación y roles.
+ * - Redirige al login si no hay usuario.
+ * - Si se pasa `allowedRoles`, redirige al dashboard si el usuario no pertenece.
  */
-function PrivateRoute({ children }) {
+function PrivateRoute({ children, allowedRoles }) {
   const { user } = useSelector((state) => state.user);
 
+  //  No autenticado → al login
   if (!user) {
-    // Si no hay usuario logueado, redirige al login
     return <Navigate to="/login" replace />;
   }
 
-  // Si está logueado, renderiza la página
+  //  Si hay restricción de roles y no cumple → al dashboard
+  if (allowedRoles && !allowedRoles.includes(user.rol)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  //  Autenticado y con rol permitido
   return children;
 }
 
