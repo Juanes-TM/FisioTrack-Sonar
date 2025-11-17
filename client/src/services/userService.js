@@ -1,8 +1,13 @@
 import api from "./api";
 
 export async function getProfile() {
-  const res = await api.get("/api/profile");
-  return res.data.user;
+  try {
+    const res = await api.get("/api/profile");
+    return res.data.user;
+  } catch (err) {
+    console.error("Error getProfile:", err);
+    throw err;
+  }
 }
 
 export async function updateProfile(data) {
@@ -10,6 +15,7 @@ export async function updateProfile(data) {
     const res = await api.put("/api/profile/update", data);
     return { ok: true, user: res.data.user };
   } catch (err) {
-    return { ok: false, msg: err.response?.data?.msg };
+    console.error("Error updateProfile:", err.response?.data);
+    return { ok: false, msg: err.response?.data?.msg || "Error desconocido" };
   }
 }

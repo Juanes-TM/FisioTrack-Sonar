@@ -114,6 +114,14 @@ export default function ResetPasswordPage() {
           >
             Restablecer contraseña
           </button>
+
+          <button
+              type="button"
+              onClick={() => navigate("/forgot-password", { replace: true }) }
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
+              Cancelar
+            </button>
         </form>
 
         {msg && <p className="text-green-600 mt-4 font-semibold">{msg}</p>}

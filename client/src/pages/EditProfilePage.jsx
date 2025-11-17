@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { getProfile, updateProfile } from "../services/userService";
 import { useNavigate } from "react-router-dom";
 
@@ -13,86 +13,72 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     async function cargar() {
-      const user = await getProfile();
+      const data = await getProfile();
       setForm({
-        nombre: user.nombre,
-        apellido: user.apellido,
-        telephone: user.telephone
+        nombre: data.nombre,
+        apellido: data.apellido,
+        telephone: data.telephone,
       });
     }
     cargar();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const res = await updateProfile(form);
-    if (res.ok) {
-      alert("Perfil actualizado correctamente");
-      navigate("/profile", { replace: true });
-    } else {
-      setMsg(res.msg || "Error actualizando perfil");
+
+    if (!res.ok) {
+      setMsg(res.msg);
+      return;
     }
+
+    alert("Perfil actualizado correctamente");
+    navigate("/profile", { replace: true });
   };
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md p-8 rounded-xl w-96"
-      >
-        <h2 className="text-xl font-bold mb-4 text-teal-700">
-          Editar mi perfil
-        </h2>
+      <div className="bg-white shadow-lg p-8 rounded-xl w-96">
+        <h2 className="text-2xl font-bold text-teal-700 mb-4">Editar Perfil</h2>
 
-        <label className="block text-left mb-2">Nombre</label>
-        <input
-          type="text"
-          name="nombre"
-          value={form.nombre}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md mb-3"
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            value={form.nombre}
+            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            className="w-full p-2 border rounded"
+          />
 
-        <label className="block text-left mb-2">Apellido</label>
-        <input
-          type="text"
-          name="apellido"
-          value={form.apellido}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md mb-3"
-        />
+          <input
+            type="text"
+            value={form.apellido}
+            onChange={(e) => setForm({ ...form, apellido: e.target.value })}
+            className="w-full p-2 border rounded"
+          />
 
-        <label className="block text-left mb-2">Teléfono</label>
-        <input
-          type="text"
-          name="telephone"
-          value={form.telephone}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md mb-3"
-        />
+          <input
+            type="text"
+            value={form.telephone}
+            onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+            className="w-full p-2 border rounded"
+          />
 
-        {msg && <p className="text-red-500 text-sm mb-3">{msg}</p>}
+          {msg && <p className="text-red-500">{msg}</p>}
 
-        <button
-          type="submit"
-          className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-md"
-        >
-          Guardar cambios
-        </button>
+          <button className="w-full bg-teal-600 text-white p-2 rounded hover:bg-teal-700">
+            Guardar cambios
+          </button>
 
-        <button
-          type="button"
-          onClick={() => navigate("/profile", { replace: true }) }
-          className="w-full mt-3 text-gray-700 underline"
-        >
-          Cancelar
-        </button>
-      </form>
+          <button
+            type="button"
+            onClick={() => navigate("/profile", { replace: true })}
+            className="w-full text-gray-600 underline mt-3"
+          >
+            Cancelar
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
