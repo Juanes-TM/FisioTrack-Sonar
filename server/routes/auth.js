@@ -142,6 +142,38 @@ router.get('/profile', authMiddleware, async (req, res) => {
 });
 
 
+// Editar perfil de usuario
+
+router.put('/profile/update', authMiddleware, async (req, res) => {
+  const { nombre, apellido, telephone } = req.body;
+
+  if (!nombre || !apellido || !telephone) {
+    return res.status(400).json({ msg: 'Todos los campos son obligatorios' });
+  }
+
+  // Teléfono: 9 dígitos
+  const telRegex = /^[0-9]{9}$/;
+  if (!telRegex.test(telephone)) {
+    return res.status(400).json({ msg: 'El teléfono debe tener 9 dígitos' });
+  }
+
+  try {
+    const updated = await User.findByIdAndUpdate(
+      req.userId,
+      { nombre, apellido, telephone },
+      { new: true } // devuelve el usuario actualizado
+    ).select("-password -__v");
+
+    if (!updated) return res.status(404).json({ msg: "Usuario no encontrado" });
+
+    res.status(200).json({ msg: "Perfil actualizado", user: updated });
+
+  } catch (err) {
+    console.error("Error actualizando perfil:", err);
+    res.status(500).json({ msg: "Error del servidor" });
+  }
+});
+
 
 
 

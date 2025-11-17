@@ -34,6 +34,13 @@ export default function ProfilePage() {
         <p><strong>Rol:</strong> {user.rol}</p>
 
         <button
+        onClick={() => navigate("/profile/edit")}
+        className="mt-6 w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-md font-semibold transition"
+        >
+          Editar perfil
+        </button>
+
+        <button
         onClick={() => navigate(-1)}
         className="mt-6 w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-md font-semibold transition"
         >

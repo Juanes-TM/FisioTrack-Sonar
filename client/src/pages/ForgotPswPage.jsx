@@ -109,6 +109,14 @@ export default function ForgotPasswordPage() {
           >
             Generar Token
           </button>
+
+          <button
+              type="button"
+              onClick={() => navigate("/login", { replace: true }) }
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
+              Cancelar
+            </button>
         </form>
 
         {msg && !error && (
@@ -156,6 +164,14 @@ export default function ForgotPasswordPage() {
               }
             >
               Ir a restablecer contraseña
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/login", { replace: true }) }
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
+              Cancelar
             </button>
           </div>
         )}

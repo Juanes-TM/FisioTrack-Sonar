@@ -7,6 +7,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 import ProfilePage from "./pages/ProfilePage";
 import ForgotPswPage from "./pages/ForgotPswPage";
 import ResetPswPage from "./pages/ResetPswPage";   
+import EditProfilePage from "./pages/EditProfilePage";
 
 // --- DASHBOARDS PRINCIPALES ---
 import PacienteDashboard from "./pages/dashboard/paciente/PacienteDashboard";
@@ -27,8 +28,10 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/edit" element={<EditProfilePage />} />
       <Route path="/forgot-password" element={<ForgotPswPage />} />
       <Route path="/reset-password" element={<ResetPswPage />} />
+
       
       {/* Dashboard protegido general */}
       <Route
