@@ -1,30 +1,62 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 
-export const useDisponibilidad = (fisioId) => {
-  const [disponibilidades, setDisponibilidades] = useState([]);
+export function useDisponibilidad(fisioId) {
+  const [semana, setSemana] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchDisponibilidades = async () => {
-    if (!fisioId) return;
-    const res = await api.get(`/disponibilidades?fisioId=${fisioId}`);
-    setDisponibilidades(res.data);
-    setLoading(false);
-  };
+  const token = localStorage.getItem("token");
 
-  const agregarDisponibilidad = async (fecha, horas) => {
-    await api.post("/disponibilidades", { fisioId, fecha, horas });
-    await fetchDisponibilidades();
-  };
-
-  const eliminarDisponibilidad = async (id) => {
-    await api.delete(`/disponibilidades/${id}`);
-    await fetchDisponibilidades();
-  };
-
+  // ────────────────────────────────
+  // CARGAR SEMANA ✔
+  // ────────────────────────────────
   useEffect(() => {
-    fetchDisponibilidades();
+    if (!fisioId) return;
+
+    const cargar = async () => {
+      try {
+        const res = await api.get(`/api/disponibilidad/semana/${fisioId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSemana(res.data);
+      } catch (err) {
+        console.error("Error al cargar disponibilidad semanal:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargar();
   }, [fisioId]);
 
-  return { disponibilidades, loading, agregarDisponibilidad, eliminarDisponibilidad };
-};
+  // ────────────────────────────────
+  // GUARDAR SEMANA ✔
+  // ────────────────────────────────
+  const guardarSemana = async (horarios) => {
+    try {
+      const payload = {
+        fisio: fisioId,
+        dias: Object.entries(horarios).map(([nombre, horas]) => ({
+          nombre,
+          horas
+        }))
+      };
+
+      const res = await api.put(
+        `/api/disponibilidad/semana`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setSemana(res.data.disponibilidad);
+      return res;
+    } catch (err) {
+      console.error("Error al guardar disponibilidad:", err);
+      throw err;
+    }
+  };
+
+  return { semana, loading, guardarSemana };
+}
