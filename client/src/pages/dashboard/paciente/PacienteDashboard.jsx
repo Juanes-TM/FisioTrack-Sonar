@@ -27,7 +27,16 @@ export default function PacienteDashboard() {
         </Link>
 
         <br />
-        
+
+        <Link
+          to="/historial"
+          className="inline-block px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 text-sm"
+        >
+          Ver historial de citas
+        </Link>
+
+        <br />
+
         <Link
           to="/profile"
           className="inline-block px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 text-sm"

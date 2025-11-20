@@ -3,8 +3,6 @@ const router = express.Router();
 const User = require("../models/user");
 const auth = require("../middleware/auth");
 
-console.log("CARGANDO profile.js");
-
 // Obtener perfil
 router.get("/", auth, async (req, res) => {
   const user = await User.findById(req.userId).select("-password -__v");

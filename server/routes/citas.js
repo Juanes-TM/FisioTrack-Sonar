@@ -206,4 +206,34 @@ router.put("/:id/estado", auth, async (req, res) => {
   }
 });
 
+
+// Historial de citas
+router.get('/historial', auth, async (req, res) => {
+  try {
+
+    let filtro = {};
+
+    if (req.userRole === "cliente") {
+      filtro = { paciente: req.userId };
+    }
+
+    else if (req.userRole === "fisioterapeuta") {
+      filtro = { fisioterapeuta: req.userId };
+    }
+
+    const citas = await Cita.find(filtro)
+      .populate("paciente", "nombre apellido")
+      .populate("fisioterapeuta", "nombre apellido")
+      .sort({ startAt: -1 });
+
+    res.json({ citas });
+
+  } catch (err) {
+    console.error("Error obteniendo historial:", err);
+    res.status(500).json({ msg: "Error obteniendo historial" });
+  }
+});
+
+
+
 module.exports = router;
