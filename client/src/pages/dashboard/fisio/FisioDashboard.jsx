@@ -7,12 +7,12 @@ export default function FisioDashboard() {
       <h1 className="text-2xl font-bold mb-4">Panel del Fisioterapeuta</h1>
       <p>Bienvenido al panel del fisioterapeuta. Aquí podrás gestionar tu disponibilidad y tus pacientes.</p>
       <br />
-      <Link 
-        to="/profile"
-        className="text-teal-700 font-semibold underline hover:text-teal-900"
-      > 
-        Ver mi perfil
-      </Link>
+      <Link
+          to="/profile"
+          className="inline-block px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 text-sm"
+        >
+          Ver mi perfil
+        </Link>
     </div>
   );
 }

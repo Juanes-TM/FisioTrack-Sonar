@@ -142,31 +142,6 @@ router.get('/profile', authMiddleware, async (req, res) => {
 });
 
 
-// Editar perfil de usuario
-router.put('/profile/update', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.userId;
-
-    const { nombre, apellido, telephone } = req.body;
-
-    const updated = await User.findByIdAndUpdate(
-      userId,
-      { nombre, apellido, telephone },
-      { new: true }
-    );
-
-    return res.status(200).json({ msg: 'Perfil actualizado', user: updated });
-  } catch (err) {
-    console.error("Error en update:", err);
-    return res.status(500).json({ msg: "Error en el servidor" });
-  }
-});
-
-
-
-
-
-
 
 // Recuperación de contraseñas
 router.post('/forgot-password', async (req, res) => {
