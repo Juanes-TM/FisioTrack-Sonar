@@ -4,7 +4,7 @@ const assert = require('assert')
 const firefox = require('selenium-webdriver/firefox')
 
 describe('disponibilidad', function() {
-  this.timeout(30000)
+  jest.setTimeout(30000)
   let driver
   let vars
   

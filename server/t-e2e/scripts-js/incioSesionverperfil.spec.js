@@ -3,8 +3,8 @@ const { Builder, By, Key, until } = require('selenium-webdriver')
 const assert = require('assert')
 const firefox = require('selenium-webdriver/firefox')
 
-describe('VerPerfil', function() {
-  this.timeout(30000)
+describe('IncioSesion-verperfil', function() {
+  jest.setTimeout(30000)
   let driver
   let vars
   
@@ -27,11 +27,11 @@ describe('VerPerfil', function() {
     if (driver) await driver.quit();
   })
 
-  it('VerPerfil', async function() {
+  it('IncioSesion-verperfil', async function() {
     await driver.get("https://10.6.131.134/")
     await driver.manage().window().setRect({ width: 1854, height: 1048 })
     await driver.findElement(By.css(".w-full:nth-child(1)")).click()
-    await driver.findElement(By.css(".w-full:nth-child(1)")).sendKeys("fisio1@ull.es")
+    await driver.findElement(By.css(".w-full:nth-child(1)")).sendKeys("nano@ull.es")
     await driver.findElement(By.css(".w-full:nth-child(2)")).click()
     await driver.findElement(By.css(".w-full:nth-child(2)")).sendKeys("123456")
     await driver.findElement(By.css(".bg-teal-600")).click()

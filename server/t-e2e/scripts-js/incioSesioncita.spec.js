@@ -4,7 +4,7 @@ const assert = require('assert')
 const firefox = require('selenium-webdriver/firefox')
 
 describe('IncioSesion-cita', function() {
-  this.timeout(60000)
+  jest.setTimeout(60000)
   let driver
   let vars
   
