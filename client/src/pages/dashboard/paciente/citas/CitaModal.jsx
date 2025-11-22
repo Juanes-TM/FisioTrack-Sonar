@@ -1,3 +1,4 @@
+//client/src/pages/dashboard/paciente/citas/CitaModal.jsx
 export default function CitaModal({ cita, onClose }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">

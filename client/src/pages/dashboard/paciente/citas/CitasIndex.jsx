@@ -1,23 +1,26 @@
+//client/src/pages/dashboard/paciente/citas/CitasIndex.jsx
 import { useSelector } from "react-redux";
-import CitasPage from "./CitasPage";
-import CitasCalendar from "./CitasCalendar";
+import CitasPage from "./CitasPage"; // Tabla antigua (fisio/admin)
+import CitasCalendar from "./CitasCalendar"; // Nuevo calendario mensual (paciente)
 
 function CitasIndex() {
   const reduxUser = useSelector((state) => state.user.user);
 
   if (!reduxUser) return <p className="p-6">No autorizado</p>;
 
-  const currentUser = reduxUser.user;  // <-- ACCESO REAL
+  const currentUser = reduxUser.user;
 
+  // CAMBIO: Si es paciente, usa la vista de calendario mensual/histórico
   if (currentUser.rol === "cliente") {
-    return <CitasCalendar modo="paciente" />;
+    return <CitasCalendar modo="paciente" />; 
   }
 
-  if (currentUser.rol === "fisioterapeuta") {
-    return <CitasCalendar modo="fisio" />;
+  // Si es fisio o admin, usa el calendario antiguo (semanal/tablas)
+  if (currentUser.rol === "fisioterapeuta" || currentUser.rol === "admin") {
+    return <CitasCalendar modo={currentUser.rol} />; 
   }
 
-  return <CitasPage />;
+  return <CitasPage />; // Fallback
 }
 
 export default CitasIndex;

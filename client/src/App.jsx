@@ -21,7 +21,7 @@ import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import CitasIndex from "./pages/dashboard/paciente/citas/CitasIndex";
 import DisponibilidadPage from "./pages/dashboard/fisio/disponibilidad/DisponibilidadPage";
 import UsuariosPage from "./pages/dashboard/admin/usuarios/UsuariosPage";
-import ReservarCitaPage from "./pages/dashboard/paciente/citas/ReservarCitaPage";
+import ReservarCitaPage from "./pages/dashboard/paciente/citas/reserva/ReservarCitaPage";
 
 function App() {
   return (

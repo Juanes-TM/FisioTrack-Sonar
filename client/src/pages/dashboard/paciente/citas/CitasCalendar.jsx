@@ -1,314 +1,310 @@
-import { useEffect, useMemo, useState } from "react";
+//client/src/pages/dashboard/paciente/citas/CitasCalendar.jsx
+import { useEffect, useState } from "react";
 import api from "../../../../services/api";
 import { useFisioterapeutas } from "../../../../hooks/useFisioterapeutas";
-import EditarCitaModal from "./EditarCitaModal";
-import CrearCitaModal from "./CrearCitaModal";
+import EditarCitaModal from "./EditarCitaModal"; 
+import CitaModal from "./CitaModal";
+import ListaCitasDiaModal from "./ListaCitasDiaModal"; 
+import CancelarModal from "./CancelarModal"; // NECESITAS ESTE MODAL O USAR EL DE RESERVA
 
 // ----------------------
 // Helpers
 // ----------------------
-function startOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function getPrimerDiaMes(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth(), 1);
 }
 
-function formatDateISO(d) {
-  return d.toISOString().split("T")[0];
+function esMismoDia(d1, d2) {
+    return d1.getDate() === d2.getDate() && 
+           d1.getMonth() === d2.getMonth() && 
+           d1.getFullYear() === d2.getFullYear();
 }
 
-function formatHour(hourInt) {
-  return `${hourInt.toString().padStart(2, "0")}:00`;
-}
-
+// ----------------------
+// Calendario Histórico Mensual
+// ----------------------
 export default function CitasCalendar({ modo }) {
-  // Semana actual
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("fisioUser") || "{}").user || {};
+  
+  const fechaRegistro = currentUser.createdAt ? new Date(currentUser.createdAt) : new Date(2024, 0, 1); 
 
-  // DATA
+  // Estado
+  const [fechaActual, setFechaActual] = useState(getPrimerDiaMes(new Date())); 
   const [citas, setCitas] = useState([]);
-  const [loadingCitas, setLoadingCitas] = useState(true);
-
-  const { fisios, loading: loadingFisios } = useFisioterapeutas();
-  const [selectedFisioId, setSelectedFisioId] = useState("mis-citas");
-  const [selectedFisioNombre, setSelectedFisioNombre] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // Modales
-  const [modalEditar, setModalEditar] = useState(null);
-  const [modalCrear, setModalCrear] = useState(false);
-  const [slotSeleccionado, setSlotSeleccionado] = useState(null);
+  const [citaSeleccionada, setCitaSeleccionada] = useState(null);
+  const [modalType, setModalType] = useState(null); // 'DETALLE' | 'EDITAR'
+  const [cancelling, setCancelling] = useState(false);
+  
+  // Nuevo estado para la lista de citas del día
+  const [citasDelDia, setCitasDelDia] = useState([]);
+  const [listaDiaModalOpen, setListaDiaModalOpen] = useState(false);
+  
+  // Estado para el modal de CANCELACIÓN
+  const [modalConfirmCancelOpen, setModalConfirmCancelOpen] = useState(false);
+  const [citaIdToCancel, setCitaIdToCancel] = useState(null); 
 
-  // UI
-  const [mensajeError, setMensajeError] = useState("");
 
-  // Horas 8 - 19
-  const hours = useMemo(() => [...Array(12)].map((_, i) => 8 + i), []);
-
-  // Días semana
-  const days = useMemo(() => {
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      return d;
-    });
-  }, [weekStart]);
-
-  // ----------------------
-  // Fetch citas (solo paciente)
-  // ----------------------
-  const fetchCitasPaciente = async () => {
+  // 1. Fetch Citas
+  const fetchCitas = async () => {
+    setLoading(true);
     try {
-      setLoadingCitas(true);
-      const res = await api.get("/api/citas");
+      const res = await api.get("/api/citas", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setCitas(res.data);
     } catch (err) {
       console.error("Error cargando citas:", err);
     } finally {
-      setLoadingCitas(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCitasPaciente();
-  }, []);
+    fetchCitas();
+  }, [token]);
 
   // ----------------------
-  // Filtrado
+  // Navegación y Lógica Mensual
   // ----------------------
-  const citasVisibles = useMemo(() => {
-    if (selectedFisioId === "mis-citas") return citas;
-    return citas.filter((c) => c.fisioterapeuta._id === selectedFisioId);
-  }, [citas, selectedFisioId]);
-
-  const citasEnCelda = (dayDate, hourInt) => {
-    const startStr = formatDateISO(dayDate);
-    return citasVisibles.filter((c) => {
-      const start = new Date(c.startAt);
-      return (
-        formatDateISO(start) === startStr && start.getHours() === hourInt
-      );
-    });
-  };
-
-  // ----------------------
-  // Crear cita
-  // ----------------------
-  const handleClickCelda = (dayDate, hourInt) => {
-    setMensajeError("");
-
-    if (modo !== "paciente") return;
-
-    const enCelda = citasEnCelda(dayDate, hourInt);
-    if (enCelda.length > 0) {
-      setMensajeError("Ya existe una cita en este horario.");
-      return;
+  const getDiasMes = (fecha) => {
+    const año = fecha.getFullYear();
+    const mes = fecha.getMonth();
+    const primerDiaMes = new Date(año, mes, 1);
+    const ultimoDiaMes = new Date(año, mes + 1, 0);
+    const dias = [];
+    
+    // Relleno días previos
+    let diaSemanaPrimerDia = primerDiaMes.getDay(); 
+    if (diaSemanaPrimerDia === 0) diaSemanaPrimerDia = 7;
+    for (let i = 1; i < diaSemanaPrimerDia; i++) {
+        const d = new Date(año, mes, 1 - (diaSemanaPrimerDia - i));
+        dias.push({ fecha: d, esMesActual: false });
     }
-
-    if (!selectedFisioId || selectedFisioId === "mis-citas") {
-      setMensajeError("Selecciona un fisioterapeuta antes de reservar.");
-      return;
+    
+    // Días del mes actual
+    for (let i = 1; i <= ultimoDiaMes.getDate(); i++) {
+        dias.push({ fecha: new Date(año, mes, i), esMesActual: true });
     }
-
-    const f = fisios.find((x) => x._id === selectedFisioId);
-
-    setSlotSeleccionado({
-      fecha: formatDateISO(dayDate),
-      hora: formatHour(hourInt),
-      fisioterapeutaId: selectedFisioId,
-      fisioterapeutaNombre: f ? `${f.nombre} ${f.apellido}` : "",
-    });
-
-    setModalCrear(true);
+    
+    // Relleno días posteriores
+    while (dias.length % 7 !== 0) {
+        const ultimo = dias[dias.length - 1].fecha;
+        const d = new Date(ultimo);
+        d.setDate(d.getDate() + 1);
+        dias.push({ fecha: d, esMesActual: false });
+    }
+    return dias;
   };
-
-  const onCitaCreada = (nueva) => {
-    if (nueva.cita) setCitas((prev) => [...prev, nueva.cita]);
-  };
-
-  const onCitaCancelada = (id) => {
-    setCitas((prev) => prev.filter((c) => c._id !== id));
-  };
-
-  // ----------------------
-  // Estilos Compactos Modernos
-  // ----------------------
-  const styles = {
-    grid: "grid text-xs",
-
-    dayHeader:
-      "px-3 py-3 text-center font-semibold text-gray-800 border-b border-gray-200 " +
-      "bg-gradient-to-b from-white to-gray-100 shadow-sm rounded-t-md",
-
-    dayToday:
-      "bg-teal-50 text-teal-700 font-bold shadow-inner border-b border-teal-200",
-
-    hourCell:
-      "px-2 py-1 text-right border-r border-gray-100 text-[11px] font-medium text-gray-500",
-
-    hourBadge:
-      "inline-block bg-gray-200 text-gray-700 px-2 py-0.5 rounded-md text-[10px] font-semibold",
-
-    cellBase:
-      "border border-gray-100 h-14 relative cursor-pointer transition",
-
-    cellHover:
-      "hover:bg-gray-100/60",
-
-    cellAltBackground:
-      "bg-gray-50/40",
-
-    evento:
-      "absolute inset-1 rounded-md p-1 text-[11px] text-white shadow-md overflow-hidden group",
-
-    tooltip:
-      "absolute z-50 hidden group-hover:block bg-black/80 text-white text-[10px] rounded px-2 py-1 " +
-      "shadow-xl -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap"
+  
+  const cambiarMes = (dir) => {
+    const nueva = new Date(fechaActual);
+    nueva.setMonth(nueva.getMonth() + dir);
+    
+    // Validar no ir antes del mes de registro (Límite inferior)
+    const limiteInferior = new Date(fechaRegistro.getFullYear(), fechaRegistro.getMonth(), 1);
+    if (dir < 0 && nueva < limiteInferior) {
+        return; 
+    }
+    setFechaActual(getPrimerDiaMes(nueva));
   };
 
   // ----------------------
+  // Handlers
+  // ----------------------
+  const handleCitaClick = (e, cita) => {
+    e.stopPropagation();
+    setCitaSeleccionada(cita);
+    
+    if (modo === 'paciente') {
+        setModalType('EDITAR'); 
+    } else {
+        setModalType('DETALLE'); 
+    }
+  };
+
+  const handleVerMas = (e, diaObj) => {
+    e.stopPropagation();
+    const citasDia = citas.filter(c => esMismoDia(new Date(c.startAt), diaObj));
+    setCitasDelDia(citasDia);
+    setListaDiaModalOpen(true);
+  }
+
+  // 1. Inicia el flujo de confirmación de cancelación (Abre el modal secundario)
+  const handleRequestCancel = (citaId) => {
+    // Primero cerramos el modal de detalle para que no esté debajo
+    setModalType(null); 
+    setCitaIdToCancel(citaId);
+    setModalConfirmCancelOpen(true);
+  };
+  
+  // 2. Ejecuta la cancelación real (Llamado desde el Modal Cancelar)
+  const handleConfirmarCancelacion = async () => {
+    if (!citaIdToCancel) return;
+    
+    setCancelling(true);
+    try {
+        const token = localStorage.getItem("token");
+        await api.put(`/api/citas/${citaIdToCancel}/estado`, { estado: 'cancelada' }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        fetchCitas(); 
+        setModalConfirmCancelOpen(false); // Cierra el modal de confirmación
+    } catch (err) {
+        alert("Error al cancelar cita: " + (err.response?.data?.msg || "Error desconocido"));
+    } finally {
+        setCancelling(false);
+        setCitaIdToCancel(null);
+    }
+  };
+  
   // Render
-  // ----------------------
+  const diasCalendario = getDiasMes(fechaActual);
+  const mesStr = fechaActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const diaNombres = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+
+  const puedeIrAtras = fechaActual > getPrimerDiaMes(fechaRegistro);
+
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-
-      {/* Título */}
-      <h2 className="text-2xl font-semibold text-teal-700 mb-2">Mis Citas</h2>
+      
+      <h1 className="text-3xl font-bold text-teal-700 mb-2">Calendario de Citas</h1>
       <p className="text-gray-600 text-sm mb-6">
-        Semana del {formatDateISO(days[0])} al {formatDateISO(days[6])}
+        Revisa el historial completo de tus citas reservadas.
       </p>
 
-      {/* Selector */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Mostrar citas de:
-        </label>
-
-        <select
-          value={selectedFisioId}
-          onChange={(e) => setSelectedFisioId(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
-        >
-          <option value="mis-citas">Mis citas</option>
-
-          {!loadingFisios &&
-            fisios.map((f) => (
-              <option key={f._id} value={f._id}>
-                {f.nombre} {f.apellido}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      {mensajeError && (
-        <div className="mb-4 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm">
-          {mensajeError}
+      {loading ? (
+        <p>Cargando calendario...</p>
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        
+        {/* Controles Mes */}
+        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100">
+            <button 
+                onClick={() => cambiarMes(-1)} 
+                disabled={!puedeIrAtras}
+                className={`p-2 rounded-lg transition-colors ${!puedeIrAtras ? 'text-gray-300 cursor-not-allowed' : 'text-teal-700 hover:bg-gray-100'}`}
+            >
+                ← Mes Anterior
+            </button>
+            <h2 className="text-xl font-bold text-gray-800 capitalize">{mesStr}</h2>
+            <button 
+                onClick={() => cambiarMes(1)} 
+                className="p-2 rounded-lg text-teal-700 hover:bg-gray-100 transition-colors"
+            >
+                Mes Siguiente →
+            </button>
         </div>
+
+        {/* Grid Calendario */}
+        <div className="p-4">
+            {/* Cabecera Semanal */}
+            <div className="grid grid-cols-7 mb-2">
+                {diaNombres.map(d => (
+                    <div key={d} className="text-center text-xs font-bold text-gray-700 uppercase py-2">
+                        {d}
+                    </div>
+                ))}
+            </div>
+
+            {/* Días */}
+            <div className="grid grid-cols-7 gap-1 lg:gap-2">
+                {diasCalendario.map((diaInfo, i) => {
+                    const citasDia = citas.filter(c => esMismoDia(new Date(c.startAt), diaInfo.fecha));
+                    const limiteCitas = 2; // Mostrar solo 2 citas por defecto
+                    const citasVisibles = citasDia.slice(0, limiteCitas);
+                    const citasRestantes = citasDia.length - limiteCitas;
+                    
+                    return (
+                        <div 
+                            key={i} 
+                            // Altura fija y scroll interno para citas
+                            className={`h-[120px] md:h-[140px] border rounded-xl p-1 transition-colors flex flex-col
+                                ${diaInfo.esMesActual ? 'bg-white border-gray-200' : 'bg-gray-50 border-transparent opacity-60'}
+                            `}
+                        >
+                            <span className={`text-sm font-bold mb-1 px-1 ${esMismoDia(diaInfo.fecha, new Date()) ? 'text-teal-600' : 'text-gray-700'}`}>
+                                {diaInfo.fecha.getDate()}
+                            </span>
+
+                            {/* Lista de Citas del Día con scroll limitado */}
+                            <div className="flex flex-col gap-1 overflow-y-hidden">
+                                {citasVisibles.map(cita => {
+                                    let colorClass = "bg-teal-500 text-white border-teal-600 hover:bg-teal-600"; // Pendiente
+                                    if (cita.estado === 'cancelada') colorClass = "bg-red-100 text-red-700 border-red-200 line-through decoration-red-400";
+                                    if (cita.estado === 'completada') colorClass = "bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600";
+                                    
+                                    const hora = new Date(cita.startAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+                                    return (
+                                        <button
+                                            key={cita._id}
+                                            onClick={(e) => handleCitaClick(e, cita)}
+                                            className={`text-left text-xs px-2 py-1 truncate font-medium rounded border w-full transition-all shadow-sm ${colorClass}`}
+                                            title={`${hora} - ${cita.motivo}`}
+                                        >
+                                            {hora} - {cita.motivo}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                            
+                            {/* Botón Ver Más */}
+                            {citasRestantes > 0 && (
+                                <button
+                                    onClick={(e) => handleVerMas(e, diaInfo.fecha)}
+                                    className="text-xs text-teal-600 font-bold mt-1 hover:text-teal-800 transition-colors px-1"
+                                >
+                                    +{citasRestantes} más...
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+      </div>
       )}
 
-      {/* CALENDARIO */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <div className="grid" style={{ gridTemplateColumns: "80px repeat(7, 1fr)" }}>
-
-          {/* Header vacío izquierda */}
-          <div />
-
-          {/* Headers de días */}
-          {days.map((d, idx) => {
-            const isToday = d.toDateString() === new Date().toDateString();
-            return (
-              <div
-                key={idx}
-                className={`${styles.dayHeader} ${isToday ? styles.dayToday : ""}`}
-              >
-                {d.toLocaleDateString("es-ES", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}
-              </div>
-            );
-          })}
-
-          {/* Horas + Celdas */}
-          {hours.map((h) => (
-            <div key={h} className="contents">
-
-              {/* Hora */}
-              <div className={styles.hourCell}>
-                <span className={styles.hourBadge}>{formatHour(h)}</span>
-              </div>
-
-              {/* Celdas */}
-              {days.map((d, idx) => {
-                const celdaCitas = citasEnCelda(d, h);
-                return (
-                  <div
-                    key={idx}
-                    className={`
-                      ${styles.cellBase}
-                      ${styles.cellHover}
-                      ${h % 2 === 0 ? styles.cellAltBackground : ""}
-                    `}
-                    onClick={() => handleClickCelda(d, h)}
-                  >
-                    {!loadingCitas &&
-                      celdaCitas.map((c) => (
-                        <div
-                          key={c._id}
-                          className={`
-                            ${styles.evento}
-                            ${
-                              c.estado === "cancelada"
-                                ? "bg-gray-400"
-                                : c.estado === "confirmada"
-                                ? "bg-teal-600"
-                                : c.estado === "completada"
-                                ? "bg-emerald-500"
-                                : "bg-amber-500"
-                            }
-                          `}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModalEditar(c);
-                          }}
-                        >
-                          {c.motivo}
-
-                          <div className={styles.tooltip}>
-                            <div className="font-semibold">
-                              {c.paciente.nombre} {c.paciente.apellido}
-                            </div>
-                            <div className="opacity-80">{c.motivo}</div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* MODALES */}
-      {modalEditar && (
+      {modalType === 'EDITAR' && ( 
         <EditarCitaModal
           visible={true}
-          cita={modalEditar}
-          onClose={() => setModalEditar(null)}
-          onCancelada={onCitaCancelada}
+          cita={citaSeleccionada}
+          onClose={() => setModalType(null)}
+          onRequestCancel={handleRequestCancel}
+          cancelling={cancelling}
+        />
+      )}
+       {modalType === 'DETALLE' && ( 
+        <CitaModal
+          cita={citaSeleccionada}
+          onClose={() => setModalType(null)}
         />
       )}
 
-      {modalCrear && (
-        <CrearCitaModal
-          visible={true}
-          onClose={() => setModalCrear(false)}
-          slot={slotSeleccionado}
-          onCreated={onCitaCreada}
+      {/* NUEVO MODAL: Listado de Citas del Día */}
+      {listaDiaModalOpen && (
+        <ListaCitasDiaModal
+            isOpen={listaDiaModalOpen}
+            onClose={() => setListaDiaModalOpen(false)}
+            citas={citasDelDia}
+            onCitaSelect={handleCitaClick}
+        />
+      )}
+      
+      {/* MODAL DE CONFIRMACIÓN DE CANCELACIÓN (IDÉNTICO A RESERVA) */}
+      {modalConfirmCancelOpen && (
+        <CancelarModal 
+          isOpen={true} 
+          onClose={() => setModalConfirmCancelOpen(false)} 
+          onConfirm={handleConfirmarCancelacion} 
+          loading={cancelling} 
         />
       )}
     </div>

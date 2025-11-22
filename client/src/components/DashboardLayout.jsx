@@ -31,14 +31,7 @@ export default function DashboardLayout() {
                 to="/dashboard/paciente"
                 className="block px-3 py-2 rounded hover:bg-teal-600 transition"
               >
-                Panel del Paciente
-              </Link>
-
-              <Link
-                to="/dashboard/paciente/citas"
-                className="block px-3 py-2 rounded hover:bg-teal-600 transition"
-              >
-                Citas
+                Inicio
               </Link>
 
               <Link
@@ -46,6 +39,13 @@ export default function DashboardLayout() {
                 className="block px-3 py-2 rounded hover:bg-teal-600 transition"
               >
                 Reservar cita
+              </Link>
+
+              <Link
+                to="/dashboard/paciente/citas"
+                className="block px-3 py-2 rounded hover:bg-teal-600 transition"
+              >
+                Calendario
               </Link>
             </>
           )}
