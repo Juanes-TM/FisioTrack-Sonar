@@ -10,6 +10,9 @@ import EditProfilePage from "./pages/EditProfilePage";
 import ForgotPswPage from "./pages/ForgotPswPage";
 import ResetPswPage from "./pages/ResetPswPage";
 import HistoryPage from "./pages/HistoryPage";
+import ValoracionForm from './pages/ValoracionPage';
+import ValoracionesList from './pages/ValoracionListPage';
+import MisValoraciones from './pages/MisValoraciones';
 
 
 // --- DASHBOARDS PRINCIPALES ---
@@ -35,6 +38,9 @@ function App() {
       <Route path="/historial" element={<HistoryPage />} />
       <Route path="/forgot-password" element={<ForgotPswPage />} />
       <Route path="/reset-password" element={<ResetPswPage />} />
+      <Route path="/valorar/:fisioId" element={<ValoracionForm />} />
+      <Route path="/valoraciones/:fisioId" element={<ValoracionesList />} />
+      <Route path="/mis-valoraciones" element={<MisValoraciones />} />
 
       {/* Dashboard protegido general */}
       <Route
