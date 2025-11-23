@@ -1,4 +1,6 @@
 // server/routes/valoraciones.js
+console.log(">>> CARGANDO RUTA VALORACIONES");
+
 const express = require('express');
 const router = express.Router();
 const Valoracion = require('../models/valoraciones');

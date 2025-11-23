@@ -1,4 +1,6 @@
 // server/models/valoraciones.js
+console.log(">>> CARGANDO MODELO VALORACIONES");
+
 const mongoose = require('mongoose');
 
 const ValoracionSchema = new mongoose.Schema({
@@ -13,4 +15,4 @@ const ValoracionSchema = new mongoose.Schema({
 // indice para buscar por fisio + especialidad rapidamente
 ValoracionSchema.index({ fisio: 1, especialidad: 1, fecha: -1 });
 
-module.exports = mongoose.model('Valoracion', ValoracionSchema);
+module.exports = mongoose.model('Valoraciones', ValoracionSchema);

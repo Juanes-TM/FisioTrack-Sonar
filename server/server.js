@@ -50,6 +50,45 @@ app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(CLIENT_DIST_PATH, "index.html"));
 });
 
+function listarRutasExpress5(app) {
+  console.log("======== RUTAS REGISTRADAS (EXPRESS 5) ========");
+
+  const router = app._router || app.router;
+
+  if (!router) {
+    console.log("No hay router cargado");
+    return;
+  }
+
+  router.stack?.forEach((middleware) => {
+    if (middleware.route) {
+      // ruta directa
+      const methods = Object.keys(middleware.route.methods)
+        .map(m => m.toUpperCase())
+        .join(", ");
+
+      console.log(`${methods}  ${middleware.route.path}`);
+    }
+
+    if (middleware.name === "router" && middleware.handle.stack) {
+      // rutas dentro de subrouters
+      middleware.handle.stack.forEach((sub) => {
+        if (sub.route) {
+          const methods = Object.keys(sub.route.methods)
+            .map(m => m.toUpperCase())
+            .join(", ");
+
+          console.log(`${methods}  ${sub.route.path}`);
+        }
+      });
+    }
+  });
+
+  console.log("======== FIN RUTAS ========");
+}
+
+listarRutasExpress5(app);
+
 // ==================== INICIAR SERVIDOR ====================
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor BACKEND escuchando en puerto ${PORT}`);
