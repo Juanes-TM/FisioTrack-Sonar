@@ -1,42 +1,57 @@
 // server/routes/valoraciones.js
-console.log(">>> CARGANDO RUTA VALORACIONES");
 
 const express = require('express');
 const router = express.Router();
 const Valoracion = require('../models/valoraciones');
-const Cita = require('../models/cita');
+// Asegúrate de que el nombre del fichero sea correcto (mayúsculas/minúsculas)
+const Cita = require('../models/cita'); 
 const User = require('../models/user');
 const auth = require('../middleware/auth');
 
-// Crear una valoración (solo paciente que haya tenido cita completada con el fisio)
-router.post('/', auth, async (req, res) => {
+// =====================================================================
+// RUTA: POST /api/valoraciones/crear
+// =====================================================================
+router.post('/crear', auth, async (req, res) => {
   try {
     const { fisioId, puntuacion, comentario, especialidad } = req.body;
 
+    // 1. Validaciones básicas
     if (!fisioId || !puntuacion || !especialidad) {
-      return res.status(400).json({ msg: 'Faltan campos obligatorios' });
+      return res.status(400).json({ msg: 'Faltan campos obligatorios: fisioId, puntuacion, especialidad' });
     }
 
-    // comprobar que fisio existe
+    // 2. Verificar rol del usuario
+    if (req.userRole !== 'cliente' && req.userRole !== 'paciente') { 
+      // Nota: Acepto 'cliente' o 'paciente' por si acaso usas distintos nombres de rol
+      return res.status(403).json({ msg: 'Solo los pacientes pueden dejar valoraciones' });
+    }
+
+    // 3. Comprobar que fisio existe
     const fisio = await User.findById(fisioId).lean();
     if (!fisio) return res.status(404).json({ msg: 'Fisioterapeuta no encontrado' });
 
-    // solo pacientes pueden valorar
-    if (req.userRole !== 'cliente') {
-      return res.status(403).json({ msg: 'Solo pacientes pueden dejar valoraciones' });
-    }
-
-    // comprobar que el paciente tuvo al menos una cita completada con ese fisio
+    // 4. Comprobar CITA COMPLETADA
+    // ATENCIÓN: Aquí verificamos si en tu modelo de Cita el campo se llama 'fisio' o 'fisioterapeuta'.
+    // Usaremos un $or para que funcione con ambos casos, o revísalo en tu modelo server/models/cita.js
     const tuvoCita = await Cita.findOne({
       paciente: req.userId,
-      fisioterapeuta: fisioId,
+      $or: [{ fisio: fisioId }, { fisioterapeuta: fisioId }], 
       estado: 'completada'
     }).lean();
 
     if (!tuvoCita) {
-      return res.status(403).json({ msg: 'Solo puedes valorar fisioterapeutas con los que tuviste una cita completada' });
+      return res.status(403).json({ 
+        msg: 'No puedes valorar: No se encontró una cita "completada" con este fisioterapeuta.' 
+      });
     }
 
+    // 5. Verificar si ya existe una valoración para esta cita/fisio (Opcional, para evitar duplicados)
+    const existeValoracion = await Valoracion.findOne({ paciente: req.userId, fisio: fisioId });
+    if (existeValoracion) {
+        return res.status(400).json({ msg: 'Ya has valorado a este fisioterapeuta anteriormente.' });
+    }
+
+    // 6. Crear la valoración
     const nueva = new Valoracion({
       fisio: fisioId,
       paciente: req.userId,
@@ -46,54 +61,53 @@ router.post('/', auth, async (req, res) => {
     });
 
     await nueva.save();
-    return res.status(201).json({ msg: 'Valoración creada', valoracion: nueva });
+    console.log(`Valoración creada por usuario ${req.userId} para fisio ${fisioId}`);
+    
+    return res.status(201).json({ msg: 'Valoración creada exitosamente', valoracion: nueva });
+
   } catch (err) {
     console.error('Error creando valoración:', err);
-    return res.status(500).json({ msg: 'Error del servidor' });
+    return res.status(500).json({ msg: 'Error interno del servidor al crear valoración' });
   }
 });
+
+
 
 // Listar valoraciones de un fisioterapeuta
 router.get('/fisio/:id', async (req, res) => {
   try {
     const valoraciones = await Valoracion.find({ fisio: req.params.id })
-      .populate('paciente', 'nombre apellido')
+      .populate('paciente', 'nombre apellidos') 
       .sort({ fecha: -1 });
-
     return res.json({ valoraciones });
   } catch (err) {
-    console.error('Error listando valoraciones por fisio:', err);
-    return res.status(500).json({ msg: 'Error del servidor' });
+    console.error(err);
+    res.status(500).json({ msg: 'Error obteniendo valoraciones' });
   }
 });
 
-// Listar valoraciones por especialidad (filtrado)
 router.get('/especialidad/:esp', async (req, res) => {
   try {
     const valoraciones = await Valoracion.find({ especialidad: req.params.esp })
-      .populate('fisio', 'nombre apellido')
+      .populate('fisio', 'nombre apellidos')
       .sort({ fecha: -1 });
-
     return res.json({ valoraciones });
   } catch (err) {
-    console.error('Error listando por especialidad:', err);
-    return res.status(500).json({ msg: 'Error del servidor' });
+    console.error(err);
+    res.status(500).json({ msg: 'Error obteniendo valoraciones por especialidad' });
   }
 });
 
-// Fisioterapeuta: ver sus valoraciones
 router.get('/mis-valoraciones', auth, async (req, res) => {
   try {
     if (req.userRole !== 'fisioterapeuta') return res.status(403).json({ msg: 'No autorizado' });
-
     const valoraciones = await Valoracion.find({ fisio: req.userId })
-      .populate('paciente', 'nombre apellido')
+      .populate('paciente', 'nombre apellidos')
       .sort({ fecha: -1 });
-
     return res.json({ valoraciones });
   } catch (err) {
-    console.error('Error mis-valoraciones:', err);
-    return res.status(500).json({ msg: 'Error del servidor' });
+    console.error(err);
+    res.status(500).json({ msg: 'Error obteniendo mis valoraciones' });
   }
 });
 

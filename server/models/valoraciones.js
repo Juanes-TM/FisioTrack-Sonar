@@ -1,5 +1,4 @@
 // server/models/valoraciones.js
-console.log(">>> CARGANDO MODELO VALORACIONES");
 
 const mongoose = require('mongoose');
 

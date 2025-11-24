@@ -4,7 +4,7 @@ import api from './api';
 // Crear valoración
 export async function crearValoracion(payload) {
   // payload: { fisioId, puntuacion, comentario, especialidad }
-  const res = await api.post('/api/valoraciones', payload);
+  const res = await api.post('/api/valoraciones/crear', payload);
   return res.data;
 }
 
