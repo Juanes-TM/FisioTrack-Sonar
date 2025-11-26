@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../../../services/api";
 import { useSelector } from "react-redux";
+import EventosTimeline from "../../../components/admin/EventosTimeline";
+
 
 export default function AdminDashboard() {
   const { user } = useSelector((state) => state.user);
@@ -110,52 +112,15 @@ export default function AdminDashboard() {
       
       {/* Sección de eventos recientes */}   {/* NUEVO */}
       <div className="mt-12">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-          Eventos recientes
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Eventos recientes</h2>
 
         {loadingEventos ? (
           <p className="text-gray-500">Cargando eventos...</p>
-        ) : eventos.length === 0 ? (
-          <p className="text-gray-500 italic">No hay eventos recientes.</p>
         ) : (
-          <div className="bg-white shadow rounded-xl divide-y">
-            {eventos.map((ev, i) => (
-              <div
-                key={i}
-                className="p-4 flex justify-between items-start hover:bg-gray-50 transition"
-              >
-                <div>
-                  <p className="font-medium text-gray-800">
-                    {ev.descripcion}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {ev.fecha
-                      ? new Date(ev.fecha).toLocaleString()
-                      : "Sin fecha"}
-                  </p>
-                </div>
-
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                    ev.tipo === "usuario_registrado"
-                      ? "bg-blue-100 text-blue-700"
-                      : ev.tipo === "cita_creada"
-                      ? "bg-green-100 text-green-700"
-                      : ev.tipo === "cita_cancelada"
-                      ? "bg-red-100 text-red-700"
-                      : ev.tipo === "cita_completada"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {ev.tipo?.replace("_", " ") || "evento"}
-                </span>
-              </div>
-            ))}
-          </div>
+          <EventosTimeline eventos={eventos} />
         )}
       </div>
+
 
 
 
