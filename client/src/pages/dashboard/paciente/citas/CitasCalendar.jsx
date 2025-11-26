@@ -45,7 +45,9 @@ export default function CitasCalendar({ modo }) {
   
   // Estado para el modal de CANCELACIÓN
   const [modalConfirmCancelOpen, setModalConfirmCancelOpen] = useState(false);
-  const [citaIdToCancel, setCitaIdToCancel] = useState(null); 
+  const [citaIdToCancel, setCitaIdToCancel] = useState(null);
+  
+  const [refreshFlag, setRefreshFlag] = useState(0);
 
 
   // 1. Fetch Citas
@@ -65,7 +67,7 @@ export default function CitasCalendar({ modo }) {
 
   useEffect(() => {
     fetchCitas();
-  }, [token]);
+  }, [token, refreshFlag]);
 
   // ----------------------
   // Navegación y Lógica Mensual
@@ -132,7 +134,11 @@ export default function CitasCalendar({ modo }) {
     setCitasDelDia(citasDia);
     setListaDiaModalOpen(true);
   }
-
+  
+  // === Refrescar citas tras editar ===
+    const refrescarCitas = () => {
+      setRefreshFlag(prev => prev + 1);
+    };
   // 1. Inicia el flujo de confirmación de cancelación (Abre el modal secundario)
   const handleRequestCancel = (citaId) => {
     // Primero cerramos el modal de detalle para que no esté debajo
@@ -279,6 +285,7 @@ export default function CitasCalendar({ modo }) {
           onClose={() => setModalType(null)}
           onRequestCancel={handleRequestCancel}
           cancelling={cancelling}
+          onUpdated={refrescarCitas}
         />
       )}
        {modalType === 'DETALLE' && ( 
