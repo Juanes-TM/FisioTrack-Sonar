@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const crypto = require('crypto');
 const router = express.Router();
+const EventLog = require("../models/eventLog");
+
 
 // Cargar configuración externa (ruta absoluta al backend_config.json)
 const configPath = '/home/usuario/backend_config.json';
@@ -61,6 +63,11 @@ router.post('/register', async (req, res) => {
     });
 
     await nuevoUsuario.save();
+
+    await EventLog.create({
+      tipo: "usuario_registrado",
+      descripcion: `Nuevo usuario registrado: ${nombre} ${apellido} (${email})`,
+    });
 
     res.status(201).json({ msg: 'Usuario registrado correctamente' });
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const Cita = require("../models/cita");
 const User = require("../models/user");
 const auth = require("../middleware/auth");
+const registrarEvento = require("../utils/registrarEvento");
 
 // ------------------------------
 // SOLAPAMIENTO
@@ -100,6 +101,19 @@ router.post("/", auth, async (req, res) => {
 
     await nueva.save();
 
+    // Obtener info del paciente que creó la cita
+    const creador = await User.findById(req.userId).select("nombre apellido email");
+
+    // Obtener info del fisio
+    const fisioInfo = await User.findById(fisioterapeutaId).select("nombre apellido email");
+
+    // Registrar evento
+    await registrarEvento(
+      "cita_creada",
+      `Cita creada por ${creador.nombre} ${creador.apellido} (${creador.email}) con el fisioterapeuta ${fisioInfo.nombre} ${fisioInfo.apellido} (${fisioInfo.email}) para el día ${start.toLocaleString()}`
+    );
+
+
     res.status(201).json({
       msg: "Cita creada correctamente",
       cita: nueva
@@ -159,6 +173,14 @@ router.patch("/:id", auth, async (req, res) => {
     }
 
     await cita.save();
+
+    const editor = await User.findById(req.userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "cita_editada",
+      `La cita ${cita._id} fue editada por ${editor.nombre} ${editor.apellido} (${editor.email}).`
+    );
+
     res.status(200).json({ msg: "Cita actualizada", cita });
 
   } catch (err) {
@@ -197,6 +219,18 @@ router.put("/:id/estado", auth, async (req, res) => {
 
     cita.estado = estado;
     await cita.save();
+
+    if (estado === "cancelada") {
+      const usuario = await User.findById(req.userId).select("nombre apellido email");
+      const paciente = await User.findById(cita.paciente).select("nombre apellido email");
+      const fisio = await User.findById(cita.fisioterapeuta).select("nombre apellido email");
+
+      await registrarEvento(
+        "cita_cancelada",
+        `La cita ${cita._id} fue cancelada por ${usuario.nombre} ${usuario.apellido} (${usuario.email}). Paciente: ${paciente.nombre} ${paciente.apellido}. Fisio: ${fisio.nombre} ${fisio.apellido}.`
+      );
+    }
+
 
     res.status(200).json({ msg: "Estado actualizado", cita });
 

@@ -7,6 +7,9 @@ const DisponibilidadSemanal = require("../models/disponibilidadSemanal");
 const DisponibilidadDia = require("../models/disponibilidadDia");
 const Cita = require("../models/cita");
 const User = require("../models/user");
+const registrarEvento = require("../utils/registrarEvento");
+
+
 
 // ==================== HELPERS ====================
 
@@ -164,6 +167,13 @@ router.put("/semana", auth, soloFisioOAdmin, async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    const fisio = await User.findById(userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "disponibilidad_modificada",
+      `El fisioterapeuta ${fisio.nombre} ${fisio.apellido} (${fisio.email}) modificó su disponibilidad semanal.`
+    );
+
     return res.status(200).json({
       msg: "Disponibilidad semanal actualizada",
       disponibilidad: updated
@@ -261,6 +271,15 @@ router.post("/dia", auth, soloFisioOAdmin, async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+
+    const fisio = await User.findById(userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "disponibilidad_modificada",
+      `El fisioterapeuta ${fisio.nombre} ${fisio.apellido} (${fisio.email}) actualizó su disponibilidad para el día ${fechaNorm.toLocaleDateString()}.`
+    );
+
+
     return res.status(200).json({
       msg: "Disponibilidad del día actualizada",
       disponibilidadDia: doc
@@ -275,6 +294,14 @@ router.delete("/dia/:id", auth, soloFisioOAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await DisponibilidadDia.findByIdAndDelete(id);
+
+    const fisio = await User.findById(req.userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "disponibilidad_eliminada",
+      `El fisioterapeuta ${fisio.nombre} ${fisio.apellido} (${fisio.email}) eliminó una excepción de disponibilidad.`
+    );
+
     res.status(200).json({ msg: "Excepción eliminada" });
   } catch (err) {
     console.error("Error en DELETE /dia:", err);

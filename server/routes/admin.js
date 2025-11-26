@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user");
 const auth = require("../middleware/auth");
+const EventLog = require("../models/eventLog");
+const registrarEvento = require("../utils/registrarEvento");
+
 
 // Middleware para permitir solo admins
 function isAdmin(req, res, next) {
@@ -31,6 +34,13 @@ router.put("/users/:id/role", auth, isAdmin, async (req, res) => {
 
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { rol }, { new: true });
+    const adminUser = await User.findById(req.userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "cambio_rol",
+      `El administrador ${adminUser.nombre} ${adminUser.apellido} (${adminUser.email}) cambió el rol de ${user.email} a ${rol}`
+    );
+
     if (!user) return res.status(404).json({ msg: "Usuario no encontrado" });
     res.status(200).json({ msg: "Rol actualizado correctamente", user });
   } catch (err) {
@@ -43,6 +53,13 @@ router.put("/users/:id/role", auth, isAdmin, async (req, res) => {
 router.delete("/users/:id", auth, isAdmin, async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const adminUser = await User.findById(req.userId).select("nombre apellido email");
+
+    await registrarEvento(
+      "usuario_eliminado",
+      `El administrador ${adminUser.nombre} ${adminUser.apellido} (${adminUser.email}) eliminó al usuario ${deletedUser.email}`
+    );
+
     if (!deletedUser) return res.status(404).json({ msg: "Usuario no encontrado" });
     res.status(200).json({ msg: "Usuario eliminado correctamente" });
   } catch (err) {
@@ -104,6 +121,21 @@ router.get("/stats", auth, isAdmin, async (req, res) => {
   } catch (err) {
     console.error("Error al obtener estadísticas:", err);
     res.status(500).json({ msg: "Error al obtener estadísticas" });
+  }
+});
+
+// Eventos recientes del sistema (para AdminDashboard)
+router.get("/eventos-recientes", auth, isAdmin, async (req, res) => {
+  try {
+    const eventos = await EventLog.find()
+      .sort({ fecha: -1 })   // más recientes primero
+      .limit(20)             // máximo 20 eventos
+      .lean();
+
+    res.status(200).json(eventos);
+  } catch (err) {
+    console.error("Error al obtener eventos recientes:", err);
+    res.status(500).json({ msg: "Error al obtener eventos recientes" });
   }
 });
 
