@@ -61,11 +61,25 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-100 to-teal-300">
-      <div className="bg-white p-10 rounded-2xl shadow-2xl w-96 text-center">
-        <h2 className="text-2xl font-semibold text-teal-700 mb-6">FisioTrack</h2>
+    <div
+      className="flex items-center justify-center min-h-screen"
+      style={{
+        backgroundImage: `url(/img/wallpaper_login.png)`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="bg-white p-18 rounded-2xl shadow-2xl w-96 text-center relative">
+        {/* Logo grande encima del formulario */}
+        <div className="absolute top-5 left-0 right-0 text-center mx-auto mb-6">
+          <img
+            src="/img/fisiotrack-logo.png"
+            alt="FisioTrack Logo"
+            className="mx-auto w-30"
+          />
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-6 mt-24">
           <input
             type="text"
             placeholder="Correo"
