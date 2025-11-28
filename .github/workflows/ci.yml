@@ -19,12 +19,21 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-    
+        
+    # [CORRECCIÓN 1] Crear archivo de configuración
+    - name: Create Backend Config File
+      run: |
+        # Creación simple del archivo de configuración requerido para evitar el error de fs.readFileSync
+        mkdir -p $HOME/backend_config
+        echo '{"JWT_SECRET": "ci_testing_secret"}' > $HOME/backend_config.json
+        
+    # [CORRECCIÓN 2] Instalar y forzar cierre de tests de BD
     - name: Install and test backend
       run: |
         cd server
         npm ci
-        npm test
+        # Usar --forceExit para tests de Mongoose y --coverage=false para velocidad
+        npm test -- --forceExit --detectOpenHandles --coverage=false
 
   test-frontend:
     name: Test Frontend  
@@ -39,9 +48,13 @@ jobs:
       with:
         node-version: '18'
     
-    - name: Install and test frontend
+    # [CORRECCIÓN 3] Instalar y usar el entorno jsdom
+    - name: Install dependencies
+      run: cd client && npm ci
+      
+    - name: Test frontend (Vitest/React)
       run: |
         cd client
-        npm ci
-        # Ejecutar tests una vez y salir
-        npx vitest run --silent
+        # Añadir --environment=jsdom para que Vitest pueda simular el DOM de React
+        # Si tienes problemas con CSS, verifica si necesitas configurar moduleNameMapper en vite.config.js
+        npx vitest run --silent --environment=jsdom
