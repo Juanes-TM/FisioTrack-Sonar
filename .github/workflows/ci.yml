@@ -107,3 +107,4 @@ jobs:
       run: |
         cd client
         npx vitest run --silent --environment=jsdom
+        
