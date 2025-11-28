@@ -9,16 +9,25 @@ const config = {
 
 const startServer = async () => {
   try {
-    console.log('🔗 Conectando a MongoDB...');
-    await mongoose.connect(config.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('Conectado a MongoDB');
+    console.log('Conectando a MongoDB...');
+    
+    // Conexión simplificada sin opciones deprecated
+    await mongoose.connect(config.MONGO_URI);
+    console.log('✅ Conectado a MongoDB');
 
     const PORT = 3000;
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Servidor listo en http://localhost:${PORT}`);
+      console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
+    });
+
+    // Manejar cierre graceful
+    process.on('SIGTERM', () => {
+      console.log('Received SIGTERM, shutting down gracefully');
+      server.close(() => {
+        mongoose.connection.close();
+        console.log('Server stopped');
+        process.exit(0);
+      });
     });
 
     return server;
