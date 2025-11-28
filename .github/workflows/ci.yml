@@ -20,22 +20,19 @@ jobs:
       with:
         node-version: '18'
         
-    # CORRECCIÓN CLAVE: Crear backend_config.json dentro del directorio 'server'
-    # para que las rutas relativas en los tests puedan accederlo si es necesario.
-    # O mejor: crear el archivo en el directorio raíz y modificar la lectura en el servidor.
-    - name: Create Backend Config Mock (for JWT secret)
+    # CORRECCIÓN 1: Crear backend_config.json DENTRO de la carpeta server
+    - name: Create Backend Config File
       run: |
-        cd server
         # Creamos el archivo directamente dentro de la carpeta server
-        echo '{"JWT_SECRET": "ci_testing_secret_123"}' > backend_config.json
+        echo '{"JWT_SECRET": "ci_testing_secret_123"}' > server/backend_config.json
         
     - name: Install dependencies (server)
-      run: cd server && npm install # Usamos install para asegurar la corrección de dependencias
+      run: cd server && npm install
       
     - name: Test backend
+      # Usamos el comando original que pasa, solo forzamos el cierre de BD
       run: |
         cd server
-        # Usar --forceExit para tests de Mongoose y --detectOpenHandles
         npm test -- --forceExit --detectOpenHandles
 
   test-frontend:
@@ -51,11 +48,15 @@ jobs:
       with:
         node-version: '18'
         
+    # CORRECCIÓN 2: Instalar Firefox y Geckodriver (WebDriver)
+    - name: Install Firefox and Drivers for Selenium
+      uses: browser-actions/setup-firefox@latest # Instala Firefox para el runner
+      
     - name: Install dependencies (client)
-      run: cd client && npm install # Usamos install en lugar de ci para mayor robustez
+      run: cd client && npm install
       
     - name: Test frontend (Vitest/React)
       run: |
         cd client
-        # Añadir --environment=jsdom para simular el DOM de React
+        # Añadimos --environment=jsdom para React/DOM simulation
         npx vitest run --silent --environment=jsdom
