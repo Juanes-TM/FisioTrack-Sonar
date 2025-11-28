@@ -10,7 +10,7 @@ const EventLog = require("../models/eventLog");
 
 
 // Cargar configuración externa (ruta absoluta al backend_config.json)
-const configPath = '/home/usuario/backend_config.json';
+const configPath = './backend_config.json';
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 // -------------------------
