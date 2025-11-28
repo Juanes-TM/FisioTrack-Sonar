@@ -19,21 +19,25 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
-    # [CORRECCIÓN 1] Crear archivo de configuración
-    - name: Create Backend Config File
+
+    - name: Define environment variables
+      run: echo "JWT_SECRET=ci_testing_secret" >> $GITHUB_ENV
+      
+    - name: Create Backend Config Mock
       run: |
-        # Creación simple del archivo de configuración requerido para evitar el error de fs.readFileSync
-        mkdir -p $HOME/backend_config
-        echo '{"JWT_SECRET": "ci_testing_secret"}' > $HOME/backend_config.json
+        # Creamos una carpeta temporal para simular el path (si el código lo necesita ABSOLUTAMENTE)
+        # Si el código se puede refactorizar para leer la variable de entorno, es mejor.
+        # Asumiendo que necesita el archivo en /home/usuario/, lo creamos en el directorio del runner ($HOME)
+        echo '{"JWT_SECRET": "${{ env.JWT_SECRET }}"}' > backend_config_ci.json
+        sudo mv backend_config_ci.json /home/usuario/backend_config.json
         
-    # [CORRECCIÓN 2] Instalar y forzar cierre de tests de BD
-    - name: Install and test backend
+    - name: Install dependencies (server)
+      run: cd server && npm ci
+      
+    - name: Test backend
       run: |
         cd server
-        npm ci
-        # Usar --forceExit para tests de Mongoose y --coverage=false para velocidad
-        npm test -- --forceExit --detectOpenHandles --coverage=false
+        npm test -- --forceExit --detectOpenHandles
 
   test-frontend:
     name: Test Frontend  
@@ -47,14 +51,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-    
-    # [CORRECCIÓN 3] Instalar y usar el entorno jsdom
-    - name: Install dependencies
-      run: cd client && npm ci
-      
+
+    - name: Install Firefox (for Selenium E2E)
+      uses: actions/setup-node@v4
+    - name: Install dependencies (client)
+      run: |
+        cd client
+        npm install # Usamos install en lugar de ci para intentar reparar el lock file
+        
     - name: Test frontend (Vitest/React)
       run: |
         cd client
-        # Añadir --environment=jsdom para que Vitest pueda simular el DOM de React
-        # Si tienes problemas con CSS, verifica si necesitas configurar moduleNameMapper en vite.config.js
+        # Usamos --environment=jsdom para simular el DOM de React
         npx vitest run --silent --environment=jsdom
