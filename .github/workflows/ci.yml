@@ -56,13 +56,9 @@ jobs:
     - name: Start Server for E2E Tests
       run: |
         cd server
-        # Iniciar servidor en background
-        node server.js &
+        node start-ci-server.js &
         echo $! > server.pid
-        # Esperar a que el servidor esté listo
-        sleep 10
-        # Verificar que el servidor está corriendo
-        curl -f http://localhost:3000/api/fisioterapeutas || echo "Server might still be starting..."
+        sleep 15
       
     - name: Run E2E Tests
       run: |
@@ -99,4 +95,4 @@ jobs:
     - name: Run Frontend Tests (Vitest/React)
       run: |
         cd client
-        npx vitest run --silent --environment=jsdom
+        npm test

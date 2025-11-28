@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:ci": "vitest run --silent"
+    "test": "vitest run --silent"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
