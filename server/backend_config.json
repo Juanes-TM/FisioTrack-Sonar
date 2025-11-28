@@ -1,0 +1,5 @@
+{
+  "MONGO_URI": "mongodb://User:12345@172.16.1.2:27017/FisioTrack?authSource=FisioTrack",
+  "CLIENT_URL": "http://172.16.0.2:4000",
+  "JWT_SECRET": "Gk93js!fd82$kdf92@3lkfKJw903lfjLKF903"
+}

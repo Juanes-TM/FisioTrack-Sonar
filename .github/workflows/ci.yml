@@ -19,24 +19,23 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-
-    - name: Define environment variables
-      run: echo "JWT_SECRET=ci_testing_secret" >> $GITHUB_ENV
-      
-    - name: Create Backend Config Mock
+        
+    # CORRECCIÓN CLAVE: Crear backend_config.json dentro del directorio 'server'
+    # para que las rutas relativas en los tests puedan accederlo si es necesario.
+    # O mejor: crear el archivo en el directorio raíz y modificar la lectura en el servidor.
+    - name: Create Backend Config Mock (for JWT secret)
       run: |
-        # Creamos una carpeta temporal para simular el path (si el código lo necesita ABSOLUTAMENTE)
-        # Si el código se puede refactorizar para leer la variable de entorno, es mejor.
-        # Asumiendo que necesita el archivo en /home/usuario/, lo creamos en el directorio del runner ($HOME)
-        echo '{"JWT_SECRET": "${{ env.JWT_SECRET }}"}' > backend_config_ci.json
-        sudo mv backend_config_ci.json /home/usuario/backend_config.json
+        cd server
+        # Creamos el archivo directamente dentro de la carpeta server
+        echo '{"JWT_SECRET": "ci_testing_secret_123"}' > backend_config.json
         
     - name: Install dependencies (server)
-      run: cd server && npm ci
+      run: cd server && npm install # Usamos install para asegurar la corrección de dependencias
       
     - name: Test backend
       run: |
         cd server
+        # Usar --forceExit para tests de Mongoose y --detectOpenHandles
         npm test -- --forceExit --detectOpenHandles
 
   test-frontend:
@@ -51,16 +50,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-
-    - name: Install Firefox (for Selenium E2E)
-      uses: actions/setup-node@v4
-    - name: Install dependencies (client)
-      run: |
-        cd client
-        npm install # Usamos install en lugar de ci para intentar reparar el lock file
         
+    - name: Install dependencies (client)
+      run: cd client && npm install # Usamos install en lugar de ci para mayor robustez
+      
     - name: Test frontend (Vitest/React)
       run: |
         cd client
-        # Usamos --environment=jsdom para simular el DOM de React
+        # Añadir --environment=jsdom para simular el DOM de React
         npx vitest run --silent --environment=jsdom
