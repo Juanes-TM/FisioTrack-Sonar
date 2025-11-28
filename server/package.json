@@ -4,9 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "jest --runInBand --silent --passWithNoTests",
-    "start": "node server.js",
-    "test:e2e": "npx mocha t-e2e/scripts-js/*.spec.js --timeout 60000 --exit"
+    "test": "jest test/ t-e2e/original/ --runInBand --silent --passWithNoTests --forceExit --detectOpenHandles --coverage=false",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
