@@ -13,7 +13,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions:checkout@v4
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -24,7 +24,7 @@ jobs:
     - name: Install Firefox and Drivers (for Selenium E2E)
       uses: browser-actions/setup-firefox@latest
       
-    # Crear archivo de configuración (ruta relativa)
+    # Crear archivo de configuración (ruta corregida para el CI)
     - name: Create Backend Config File
       run: |
         # Esto asegura que ./backend_config.json exista dentro de la carpeta server
@@ -34,9 +34,9 @@ jobs:
       run: cd server && npm install
       
     - name: Run Backend Tests (Unitarios + Original E2E)
+      # Simplemente llamamos a npm test, que ahora usa la ruta específica del package.json
       run: |
         cd server
-        # El script 'npm test' ahora ejecuta test/ Y t-e2e/original/
         npm test
 
   test-frontend:
@@ -45,7 +45,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions:checkout@v4
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
