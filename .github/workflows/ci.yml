@@ -13,28 +13,31 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions:checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         
-    # CORRECCIÓN 1: Crear backend_config.json DENTRO de la carpeta server
+    # Instalar Firefox para los tests E2E originales de Selenium
+    - name: Install Firefox and Drivers (for Selenium E2E)
+      uses: browser-actions/setup-firefox@latest
+      
+    # Crear archivo de configuración (ruta relativa)
     - name: Create Backend Config File
       run: |
-        cd server
-        # Creamos el archivo que ahora debería ser accesible por ruta relativa
-        echo '{"JWT_SECRET": "ci_testing_secret_123"}' > backend_config.json
+        # Esto asegura que ./backend_config.json exista dentro de la carpeta server
+        echo '{"JWT_SECRET": "ci_testing_secret_123"}' > server/backend_config.json
         
     - name: Install dependencies (server)
       run: cd server && npm install
       
-    - name: Test backend
-      # Si falla por 401, es problema del TOKEN en los tests, pero la configuración es la correcta
+    - name: Run Backend Tests (Unitarios + Original E2E)
       run: |
         cd server
-        npm test -- --forceExit --detectOpenHandles --coverage=false
+        # El script 'npm test' ahora ejecuta test/ Y t-e2e/original/
+        npm test
 
   test-frontend:
     name: Test Frontend  
@@ -42,22 +45,17 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions:checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         
-    # CORRECCIÓN 2: Instalar Firefox y Drivers (para Selenium E2E)
-    - name: Install Firefox and Drivers for Selenium
-      uses: browser-actions/setup-firefox@latest
-      
     - name: Install dependencies (client)
       run: cd client && npm install
       
-    - name: Test frontend (Vitest/React)
+    - name: Run Frontend Tests (Vitest/React)
       run: |
         cd client
-        # Vitest para tests unitarios
         npx vitest run --silent --environment=jsdom
