@@ -4,6 +4,7 @@ const router = express.Router();
 const Cita = require("../models/cita");
 const User = require("../models/user");
 const auth = require("../middleware/auth");
+const Notificacion = require("../models/notificacion");
 const registrarEvento = require("../utils/registrarEvento");
 
 // ------------------------------
@@ -230,8 +231,35 @@ router.put("/:id/estado", auth, async (req, res) => {
         "cita_cancelada",
         `La cita ${cita._id} fue cancelada por ${usuario.nombre} ${usuario.apellido} (${usuario.email}). Paciente: ${paciente.nombre} ${paciente.apellido}. Fisio: ${fisio.nombre} ${fisio.apellido}.`
       );
-    }
+    // --- LÓGICA DE NOTIFICACIÓN DE CANCELACIÓN ---
+      let destinatarioId = null;
+      let mensajeNotificacion = "";
+      
+      const fechaStr = new Date(cita.startAt).toLocaleDateString('es-ES');
+      const horaStr = new Date(cita.startAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
+      // CASO A: El usuario que cancela es el PACIENTE -> Avisar al Fisio
+      if (req.userId === paciente._id.toString()) {
+        destinatarioId = fisio._id;
+        mensajeNotificacion = `⚠️ Cita cancelada: El paciente ${paciente.nombre} ${paciente.apellido} canceló la cita del ${fechaStr} a las ${horaStr}.`;
+      } 
+      // CASO B: El usuario que cancela es el FISIO -> Avisar al Paciente
+      else if (req.userId === fisio._id.toString()) {
+        destinatarioId = paciente._id;
+        mensajeNotificacion = `⚠️ Cita cancelada: El fisio ${fisio.nombre} canceló tu cita del ${fechaStr} a las ${horaStr}.`;
+      }
+
+      if (destinatarioId) {
+        await Notificacion.create({
+          usuario: destinatarioId,
+          mensaje: mensajeNotificacion,
+          tipo: 'cancelacion',
+          citaId: cita._id
+        });
+        console.log("🔔 Notificación de cancelación creada para:", destinatarioId);
+      }
+      // ---------------------------------------------
+    }
 
     res.status(200).json({ msg: "Estado actualizado", cita });
 
