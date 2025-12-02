@@ -31,6 +31,8 @@ const citasRoutes = require("./routes/citas");
 const fisioRoutes = require("./routes/fisioterapeutas");
 const disponibilidadRoutes = require("./routes/disponibilidad");
 const valoracionesRoutes = require("./routes/valoraciones");
+const notificacionesRoutes = require("./routes/notificaciones");
+const iniciarCron = require("./services/cronService");
 
 // ==================== MONTAR RUTAS API ====================
 
@@ -40,6 +42,8 @@ app.use("/api/fisioterapeutas", fisioRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/disponibilidad", disponibilidadRoutes);
 app.use("/api/valoraciones", valoracionesRoutes);
+app.use("/api/notificaciones", notificacionesRoutes);
+iniciarCron();
 app.use("/api", authRoutes);
 
 // ==================== FRONTEND REACT ====================
