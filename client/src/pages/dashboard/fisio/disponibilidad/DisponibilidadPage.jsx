@@ -1,7 +1,7 @@
 // client/src/pages/dashboard/fisio/disponibilidad/DisponibilidadPage.jsx
 import { useEffect, useState } from "react";
 import { useDisponibilidad } from "../../../../hooks/useDisponibilidad";
-import EditarCitaModal from "./EditarCitaModal"; // Importamos el modal específico del fisio
+import EditarCitaModal from "../../../../pages/dashboard/paciente/citas/EditarCitaModal";
 
 const DIAS = [
   "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
