@@ -7,12 +7,13 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  # ==========================================
+  # JOB 1: BACKEND TESTS
+  # ==========================================
   test-backend:
     name: Test Backend (Unit Tests)
     runs-on: ubuntu-latest
     
-    # Mantenemos Mongo porque tus tests unitarios de backend (test/...) 
-    # parecen usar una conexión real a base de datos en memoria o testdb.
     services:
       mongodb:
         image: mongo:5
@@ -22,14 +23,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+      
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20' # ACTUALIZADO: v20 para evitar errores de dependencias
         cache: 'npm'
         cache-dependency-path: server/package-lock.json
-        
+
     - name: Create Backend Config
       run: |
         cd server
@@ -39,18 +40,21 @@ jobs:
           "MONGO_URI": "mongodb://localhost:27017/testdb"
         }
         EOF
-        
+
     - name: Install dependencies
       run: |
         cd server
         npm ci
-        
+
     - name: Run Backend Unit Tests
-      # Ejecutamos SOLO los tests de la carpeta test/ (Unitarios)
-      # Eliminamos referencias a t-e2e
       run: |
         cd server
+        # Ejecutamos tests unitarios
         npm test -- test/ --runInBand --silent --passWithNoTests --forceExit --detectOpenHandles --coverage=false
+
+  # ==========================================
+  # JOB 2: FRONTEND TESTS
+  # ==========================================
   test-frontend:
     name: Test Frontend (Unit Tests)  
     runs-on: ubuntu-latest
@@ -59,22 +63,44 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+      
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20' # ACTUALIZADO: v20 requerido por Vite/Vitest
         cache: 'npm'
         cache-dependency-path: client/package-lock.json
-        
+
     - name: Install dependencies (client)
       run: |
         cd client
         npm ci
-      
+
     - name: Run Frontend Tests
       env:
         CI: true
       run: |
         cd client
-        timeout 120s npx vitest run --reporter=verbose --pool=forks --no-cache --bail=1 --testTimeout=30000 --hookTimeout=30000 || true
+        # He quitado el "|| true" del final para que si fallan los tests, NO se ejecute Sonar
+        timeout 120s npx vitest run --reporter=verbose --pool=forks --no-cache --bail=1 --testTimeout=30000 --hookTimeout=30000
+
+  # ==========================================
+  # JOB 3: SONARCLOUD (CALIDAD)
+  # ==========================================
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    # IMPORTANTE: "needs" asegura que esto solo corra si los tests anteriores pasan (requisito de la tarea)
+    needs: [test-backend, test-frontend] 
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para que Sonar analice el historial correctamente
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Token interno de GitHub
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # El secreto que creaste
