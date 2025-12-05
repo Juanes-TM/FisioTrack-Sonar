@@ -50,7 +50,7 @@ jobs:
       run: |
         cd server
         # Ejecutamos tests unitarios
-        npm test -- test/ --runInBand --silent --passWithNoTests --forceExit --detectOpenHandles --coverage=false
+        npm test -- test/ --runInBand --silent --passWithNoTests --forceExit --detectOpenHandles --coverage
 
   # ==========================================
   # JOB 2: FRONTEND TESTS
@@ -98,4 +98,10 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  Codecov:
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
