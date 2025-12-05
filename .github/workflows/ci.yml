@@ -8,7 +8,7 @@ on:
 
 jobs:
   # ==========================================
-  # JOB 1: BACKEND TESTS
+  # JOB 1: BACKEND TESTS + CODECOV
   # ==========================================
   test-backend:
     name: Test Backend (Unit Tests)
@@ -27,7 +27,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # ACTUALIZADO: v20 para evitar errores de dependencias
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: server/package-lock.json
 
@@ -49,11 +49,18 @@ jobs:
     - name: Run Backend Unit Tests
       run: |
         cd server
-        # Ejecutamos tests unitarios
+        # Importante: --coverage genera el reporte que Codecov necesita
         npm test -- test/ --runInBand --silent --passWithNoTests --forceExit --detectOpenHandles --coverage
 
+    # --- CORRECCIÓN: Codecov va AQUÍ, justo después de los tests ---
+    - name: Upload Backend Coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: backend
+
   # ==========================================
-  # JOB 2: FRONTEND TESTS
+  # JOB 2: FRONTEND TESTS + CODECOV
   # ==========================================
   test-frontend:
     name: Test Frontend (Unit Tests)  
@@ -67,7 +74,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # ACTUALIZADO: v20 requerido por Vite/Vitest
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: client/package-lock.json
 
@@ -81,9 +88,16 @@ jobs:
         CI: true
       run: |
         cd client
-        # He quitado el "|| true" del final para que si fallan los tests, NO se ejecute Sonar
-        timeout 120s npx vitest run --reporter=verbose --pool=forks --no-cache --bail=1 --testTimeout=30000 --hookTimeout=30000
+        # Vitest genera cobertura si está configurado en package.json o vite.config
+        timeout 120s npx vitest run --coverage --reporter=verbose --pool=forks --no-cache --bail=1 --testTimeout=30000 --hookTimeout=30000
 
+    # --- CORRECCIÓN: Codecov va AQUÍ también ---
+    - name: Upload Frontend Coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: frontend
+        
   # ==========================================
   # JOB 3: SONARCLOUD (CALIDAD)
   # ==========================================
@@ -104,4 +118,3 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
